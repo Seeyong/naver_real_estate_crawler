@@ -5,7 +5,7 @@
 
 2018. 10. 19 Developed by Seeyong
 NaverOfficetel Crawler
-V 1.0
+V 1.0.0
 '''
 '''
 오피스텔 : rletTypeCd=A02
@@ -13,7 +13,6 @@ V 1.0
 Highest Year of School Completed : hscpTypeCd=A02
 법정동 코드 API http://juso.seoul.go.kr/openapi/helps/SearchApi_jibun.aspx
 http://www.code.go.kr/
-https://financedata.github.io/posts/korea-area-code.html
 '''
 
 # Import Libraries
@@ -24,8 +23,25 @@ import pandas as pd
 from tqdm import tqdm
 from time import sleep
 import random
-from multiprocessing import Pool
-import numpy as np
+
+# Get city/district/village list
+def getRegionList(df_village_code):
+    # get 동 list
+    village_lists = list(df_village_code['법정동명'].str.split(' '))
+    village_list = [x[-1] for x in village_lists]
+
+    # get 도시 list
+    city_list = [x[0] for x in village_lists]
+
+    # get 구 list : 제주특별자치도의 경우 제주시&서귀포시
+    district_list = []
+    for village in village_lists:
+        if len(village) > 1:
+            district_list.append(village[1])
+        else:
+            district_list.append(village[0])
+
+    return city_list, district_list, village_list
 
 # Get province from user
 def getProvince(df_village_code):
@@ -409,20 +425,8 @@ def main():
     df_village_code = pd.read_csv('http://bit.ly/2PeVzTS', sep='\t', dtype={'법정동코드': str})
     df_village_code = df_village_code[df_village_code["폐지여부"] == "존재"]
 
-    # get 동 list
-    village_lists = list(df_village_code['법정동명'].str.split(' '))
-    village_list = [x[-1] for x in village_lists]
-
-    # get 도시 list
-    city_list = [x[0] for x in village_lists]
-
-    # get 구 list : 제주특별자치도의 경우 제주시&서귀포시
-    district_list = []
-    for village in village_lists:
-        if len(village) > 1:
-            district_list.append(village[1])
-        else:
-            district_list.append(village[0])
+    # get Region list
+    city_list, district_list, village_list = getRegionList(df_village_code)
 
     # create village_DataFrame
     df_village_code["도시"] = city_list
@@ -440,8 +444,6 @@ def main():
     # filter village_list
     village_list = filterProvinces(province)
 
-    # ----------------
-
     # get contents urls
     searching_url_dict = getContentsUrls(village_list, df_village_code)
 
@@ -449,10 +451,10 @@ def main():
     result = getResult(searching_url_dict)
 
     # Create result DataFrame
+    result = pd.DataFrame(result)
+
     column_list = ['도시', '구/군', '동', '물건명', '매매가', '계약면적', '전용면적', '해당층', '총층', '방개수', '욕실수', '융자금', '입주가능일',
                    '월관리비', '보증금', '월세', '특징', '중개업소', '공과금', '중개보수', '신축일', '물건url']
-
-    result = pd.DataFrame(result)
     result.columns = column_list
 
     # add other columns
