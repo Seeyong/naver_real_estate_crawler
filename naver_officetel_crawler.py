@@ -75,7 +75,7 @@ def getProvince(df_village_code):
     return province
 
 # Filter provinces
-def filterProvinces(province):
+def filterProvinces(province, df_village_code):
     if province == "전지역":
         village_list = village_list
     elif province == '(예시)삼성동':
@@ -442,7 +442,7 @@ def main():
     province = getProvince(df_village_code)
 
     # filter village_list
-    village_list = filterProvinces(province)
+    village_list = filterProvinces(province, df_village_code)
 
     # get contents urls
     searching_url_dict = getContentsUrls(village_list, df_village_code)
