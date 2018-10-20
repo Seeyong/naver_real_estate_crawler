@@ -348,6 +348,42 @@ def getResult(searching_url_dict):
     return result
 
 
+def addCalcColumns(df):
+    interest_rate = 0.038
+    loanable_rate = 0.68
+
+    try:
+        df['매매가'] = df['매매가'] * 10000
+        df['융자금'] = df['융자금'] * 10000
+        df['전용률'] = df['전용면적'] / df['계약면적']
+        df['전용률'] = df['전용률'].round(2)
+        df['계약평단가'] = df['매매가'] / df['계약면적']
+        df['전용평단가'] = df['매매가'] / df['전용면적']
+        df['월세'] = df['월세'] * 10000
+        df['보증금'] = df['보증금'] * 10000
+        df['연세'] = df['월세'] * 12
+        df['대출금'] = df['매매가'] * loanable_rate
+        df['중개보수'] = df['중개보수'] * 10000
+        df['실질매입비용'] = df['매매가'] - df['보증금'] + df['공과금'] + (df['중개보수'])
+        df['자기자금'] = df['실질매입비용'] - df['대출금']
+        df['자기자금이자'] = df['자기자금'] * interest_rate
+        df['연이자'] = df['대출금'] * interest_rate
+        df['연수익금'] = df['연세'] - df['연이자']
+        df['자기자금수익률'] = (df['연수익금'] / df['자기자금']) * 100
+        df['현재일자'] = datetime.today()
+        df['연기간차이'] = df['현재일자'] - df['신축일자']
+        df['연기간차이'] = df['연기간차이'].dt.days / 365
+        df['연기간차이'] = df['연기간차이'].round(2)
+        df['적정매입가'] = (df['월세'] * 250) + df['보증금'] - (df['연기간차이'] * 2000000)
+        df['공짜수익'] = df['연수익금'] - df['자기자금이자']
+        df['매입여부'] = df['매매가'] < df['적정매입가']
+        df['대출없는수익률'] = df['연세'] / (df['매매가'] - df['보증금'])
+        df['대출없는수익률'] = df['대출없는수익률'].round(2)
+    except (ValueError, AttributeError, IndexError, ZeroDivisionError) as e:
+        pass
+
+    return df
+
 def main():
     # public village infos
     df_village_code = pd.read_csv('http://bit.ly/2PeVzTS', sep='\t', dtype={'법정동코드': str})
@@ -385,10 +421,12 @@ def main():
     if province == "전지역":
         village_list = village_list
     elif province == '(예시)삼성동':
-        specific_district_list = ['강서구', '영등포구', '구로구', '금천구', '관악구', '마포구', '분당구']  # 특별히 원하는 동이 있을 경우 이곳의 리스트를 변경
-        specific_village_list = list(df_village_code[df_village_code["구/군"].isin(specific_district_list)]['동'])
-        village_list = [specific_village_list]
-else:
+        #specific_district_list = ['강서구', '영등포구', '구로구', '금천구', '관악구', '마포구', '분당구']  # 특별히 원하는 "구/군"이 있을 경우 이곳의 리스트를 변경
+        # specific_village_list = list(df_village_code[df_village_code["구/군"].isin(specific_district_list)]['동'])
+        # village_list = [specific_village_list][0]
+        village_list = ['삼성동']
+
+    else:
         village_list = df_village_code[df_village_code["도시"] == province]["동"]
 
     # ----------------
@@ -405,6 +443,9 @@ else:
 
     result = pd.DataFrame(result)
     result.columns = column_list
+
+    # add other columns
+    result = addCalcColumns(result)
 
     # Create into an Excel file
     createExcelFile(result, province)
