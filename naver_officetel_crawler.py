@@ -55,12 +55,15 @@ def getProvince(df_village_code):
 
     return province
 
-def getContentsUrls(village_list):
+
+def getContentsUrls(village_list, df_village_code):
     root_url = "https://land.naver.com/"
-    searching_url_list = []
+    searching_url_dict = {}
     max_page = 20
 
-    for village in village_list:
+    for village in tqdm(village_list):
+        city = df_village_code[df_village_code["동"] == village]['도시'].values[0]
+        district = df_village_code[df_village_code["동"] == village]['구/군'].values[0]
         code = df_village_code[df_village_code["동"] == village]['법정동코드'].values[0]
         for page_number in range(1, max_page + 1):
             basic_url = 'https://land.naver.com/article/articleList.nhn?rletTypeCd=A02&tradeTypeCd=A1&hscpTypeCd=A02&cortarNo={code}&articleOrderCode=&siteOrderCode=&cpId=&mapX=&mapY=&mapLevel=&minPrc=&maxPrc=&minWrrnt=&maxWrrnt=&minLease=&maxLease=&minSpc=&maxSpc=&subDist=&mviDate=&hsehCnt=&rltrId=&mnex=&mHscpNo=&mPtpRange=&mnexOrder=&location=1924&ptpNo=&bssYm=&schlCd=&cmplYn=&page={page_number}#_content_list_target'.format(
@@ -85,9 +88,12 @@ def getContentsUrls(village_list):
             else:
                 for i in range(len(basic_elems)):
                     estate_url = root_url + basic_elems[i].find("a").attrs["href"]
-                    searching_url_list.append(estate_url)
+                    searching_url_dict[estate_url] = [city, district, village]
 
-    return searching_url_list
+        # ban 방지용 : "동"이 변경될 때 마다 쉼
+        sleep(25)
+
+    return searching_url_dict
 
 def getContentsTitle(searching_soup):
     # title
@@ -105,7 +111,7 @@ def getContentsPrice(searching_soup):
         price = rate_basic[1].find_all("span")[0].text
         price = int(price.split("만")[0].replace(",",""))
     except (ValueError, AttributeError, IndexError) as e:
-        price = "-"
+        price = 0
     return price
 
 def getContractArea(searching_soup):
@@ -120,7 +126,7 @@ def getContractArea(searching_soup):
         areas_list = areas.split('/')
         contract_area = float(areas_list[0])
     except (ValueError, AttributeError, IndexError) as e:
-            contract_area = "-"
+            contract_area = 0
     return contract_area
 
 def getExclusiveArea(searching_soup):
@@ -135,7 +141,7 @@ def getExclusiveArea(searching_soup):
         areas_list = areas.split('/')
         exclusive_area = float(areas_list[1].split('㎡')[0])
     except (ValueError, AttributeError, IndexError) as e:
-            exclusive_area = "-"
+            exclusive_area = 0
     return exclusive_area
 
 def getSpecificFloor(searching_soup):
@@ -145,7 +151,7 @@ def getSpecificFloor(searching_soup):
         floors = summary_basic[1].text.split("/")
         specific_floor = int(floors[0])
     except (ValueError, AttributeError, IndexError) as e:
-        specific_floor = "-"
+        specific_floor = 0
     return specific_floor
 
 def getTotalFloor(searching_soup):
@@ -155,7 +161,7 @@ def getTotalFloor(searching_soup):
         floors = summary_basic[1].text.split("/")
         total_floor = int(floors[1].split("층")[0])
     except (ValueError, AttributeError, IndexError) as e:
-        total_floor = "-"
+        total_floor = 0
     return total_floor
 
 def getRooms(searching_soup):
@@ -165,7 +171,7 @@ def getRooms(searching_soup):
         room_and_bath = summary_basic[3].text.split("/")
         rooms = int(room_and_bath[0])
     except (ValueError, AttributeError, IndexError) as e:
-        rooms = "-"
+        rooms = 0
     return rooms
 
 def getBaths(searching_soup):
@@ -175,7 +181,7 @@ def getBaths(searching_soup):
         room_and_bath = summary_basic[3].text.split("/")
         baths = int(room_and_bath[1].split('개')[0])
     except (ValueError, AttributeError, IndexError) as e:
-        baths = "-"
+        baths = 0
     return baths
 
 def getLoanAmount(searching_soup):
@@ -184,7 +190,7 @@ def getLoanAmount(searching_soup):
         summary_basic = searching_soup.find("div", {"class":"view_info"}).find_all("div", {"class":"inner"})
         loan_amount = int(summary_basic[5].text.split("만")[0].replace(',',''))
     except (ValueError, AttributeError, IndexError) as e:
-        loan_amount = "-"
+        loan_amount = 0
     return loan_amount
 
 def getMoveable(searching_soup):
@@ -202,7 +208,7 @@ def getAdminCost(searching_soup):
         summary_basic = searching_soup.find("div", {"class":"view_info"}).find_all("div", {"class":"inner"})
         administration_cost = int(summary_basic[9].text.split("원")[0].strip().replace(",",""))
     except (ValueError, AttributeError, IndexError) as e:
-        administration_cost = "-"
+        administration_cost = 0
     return administration_cost
 
 def getDepositAmount(searching_soup):
@@ -212,7 +218,7 @@ def getDepositAmount(searching_soup):
         deposit_and_rentfee = summary_basic[11].text.split("/")
         deposit = int(deposit_and_rentfee[0].replace(',','').strip())
     except (ValueError, AttributeError, IndexError) as e:
-        deposit = "-"
+        deposit = 0
     return deposit
 
 def getRentFee(searching_soup):
@@ -222,7 +228,7 @@ def getRentFee(searching_soup):
         deposit_and_rentfee = summary_basic[11].text.split("/")
         rent_fee = int(deposit_and_rentfee[1].split("만")[0].strip().replace(',',''))
     except (ValueError, AttributeError, IndexError) as e:
-        rent_fee = "-"
+        rent_fee = 0
     return rent_fee
 
 def getChar(searching_soup):
@@ -256,7 +262,7 @@ def getUtilityBills(searching_soup):
         utility_bills = int(utility_bills)
 
     except (ValueError, AttributeError, IndexError) as e:
-        utility_bills = "-"
+        utility_bills = 0
 
     return utility_bills
 
@@ -266,7 +272,7 @@ def getIntermPay(searching_soup):
         intermediate_soup = searching_soup.find_all('ul', {"class":"lst_tax"})[0]
         intermediate_pay = int(intermediate_soup.find("strong").text)
     except (ValueError, AttributeError, IndexError) as e:
-        intermediate_pay = "-"
+        intermediate_pay = 0
     return intermediate_pay
 
 def getCompletionDate(searching_soup):
@@ -287,13 +293,17 @@ def createExcelFile(df):
     df.to_excel(writer, sheet_name)
     writer.save()
 
-def getResult(searching_url_list):
+
+def getResult(searching_url_dict):
     # create null list for DataFrame
     result = []
+    count = 1
 
-    for url in tqdm(searching_url_list):
-        # ban 방지용 : url 개수가 10의 배수일 때 더 오래 쉼
-        if searching_url_list.index(url) % 10 == 0:
+    for url in tqdm(searching_url_dict):
+
+        # ban 방지용 : url 개수가 20의 배수일 때 더 오래 쉼
+        count += 1
+        if count % 20 == 0:
             sleep(25)
 
         url_user = rq.Request(url,
@@ -303,6 +313,12 @@ def getResult(searching_url_list):
         searching_html = rq.urlopen(url_user).read()
         searching_soup = bs(searching_html, "html.parser")
 
+        # get region info
+        city = searching_url_dict[url][0]
+        district = searching_url_dict[url][1]
+        village = searching_url_dict[url][2]
+
+        # get contents
         title = getContentsTitle(searching_soup)
         price = getContentsPrice(searching_soup)
         contract_area = getContractArea(searching_soup)
@@ -322,14 +338,15 @@ def getResult(searching_url_list):
         intermediate_pay = getIntermPay(searching_soup)
         completion_date = getCompletionDate(searching_soup)
 
-        info_list = [title, price, contract_area, exclusive_area, specific_floor, total_floor, rooms, baths,
-                     loan_amount, moveable,
+        info_list = [city, district, village, title, price, contract_area, exclusive_area, specific_floor, total_floor,
+                     rooms, baths, loan_amount, moveable,
                      administration_cost, deposit, rent_fee, characteristics, intermediary, utility_bills,
                      intermediate_pay, completion_date, url]
 
         result.append(info_list)
 
     return result
+
 
 def main():
     # public village infos
@@ -343,8 +360,17 @@ def main():
     # get 도시 list
     city_list = [x[0] for x in village_lists]
 
+    # get 구 list : 제주특별자치도의 경우 제주시&서귀포시
+    district_list = []
+    for village in village_lists:
+        if len(village) > 1:
+            district_list.append(village[1])
+        else:
+            district_list.append(village[0])
+
     # create village_DataFrame
     df_village_code["도시"] = city_list
+    df_village_code["구/군"] = district_list
     df_village_code["동"] = village_list
     df_village_code = df_village_code[df_village_code['동'] != df_village_code['도시']]
     df_village_code = df_village_code[~df_village_code['동'].str.endswith('구')]
@@ -359,27 +385,29 @@ def main():
     if province == "전지역":
         village_list = village_list
     elif province == '(예시)삼성동':
-        village_list = ['삼성동']
-    else:
+        specific_district_list = ['강서구', '영등포구', '구로구', '금천구', '관악구', '마포구', '분당구']  # 특별히 원하는 동이 있을 경우 이곳의 리스트를 변경
+        specific_village_list = list(df_village_code[df_village_code["구/군"].isin(specific_district_list)]['동'])
+        village_list = [specific_village_list]
+else:
         village_list = df_village_code[df_village_code["도시"] == province]["동"]
 
     # ----------------
 
     # get contents urls
-    searching_url_list = getContentsUrls(village_list)
+    searching_url_dict = getContentsUrls(village_list, df_village_code)
 
     # get informations
-    result = getResult(searching_url_list)
+    result = getResult(searching_url_dict)
 
     # Create result DataFrame
-    column_list = ['물건명', '매매가', '계약면적', '전용면적', '해당층', '총층', '방개수', '욕실수', '융자금', '입주가능일',
+    column_list = ['도시', '구/군', '동', '물건명', '매매가', '계약면적', '전용면적', '해당층', '총층', '방개수', '욕실수', '융자금', '입주가능일',
                    '월관리비', '보증금', '월세', '특징', '중개업소', '공과금', '중개보수', '신축일', '물건url']
 
     result = pd.DataFrame(result)
     result.columns = column_list
 
     # Create into an Excel file
-    createExcelFile(result)
+    createExcelFile(result, province)
 
 if __name__ == "__main__":
     main()
