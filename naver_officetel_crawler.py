@@ -1,5 +1,7 @@
 '''
-DataFrame 상에서 추가적인 연산처리
+총세대수
+총주차대수(세대당)
+실거래가
 
 2018. 10. 19 Developed by Seeyong
 NaverOfficetel Crawler
@@ -14,6 +16,7 @@ http://www.code.go.kr/
 https://financedata.github.io/posts/korea-area-code.html
 '''
 
+# Import Libraries
 from urllib import request as rq
 from bs4 import BeautifulSoup as bs
 from datetime import datetime
@@ -24,7 +27,7 @@ import random
 from multiprocessing import Pool
 import numpy as np
 
-
+# Get province from user
 def getProvince(df_village_code):
     city_number = "0.전지역 | \n"
     city_dict = {0: '전지역'}
@@ -55,7 +58,21 @@ def getProvince(df_village_code):
 
     return province
 
+# Filter provinces
+def filterProvinces(province):
+    if province == "전지역":
+        village_list = village_list
+    elif province == '(예시)삼성동':
+        #         specific_district_list = ['강서구', '영등포구', '구로구', '금천구', '관악구', '마포구', '동대문구', '분당구'] # 특별히 원하는 "구/군"이 있을 경우 이곳의 리스트를 변경
+        #         specific_village_list = list(df_village_code[df_village_code["구/군"].isin(specific_district_list)]['동'])
+        #         village_list = [specific_village_list][0]
+        village_list = ["삼성동"]
+    else:
+        village_list = df_village_code[df_village_code["도시"] == province]["동"]
 
+    return village_list
+
+# Get contents_urls
 def getContentsUrls(village_list, df_village_code):
     root_url = "https://land.naver.com/"
     searching_url_dict = {}
@@ -95,6 +112,7 @@ def getContentsUrls(village_list, df_village_code):
 
     return searching_url_dict
 
+# Get contents
 def getContentsTitle(searching_soup):
     # title
     try:
@@ -284,6 +302,7 @@ def getCompletionDate(searching_soup):
         completion_date = "-"
     return completion_date
 
+# Create an Excel file
 def createExcelFile(df):
     today = datetime.today()
     str_today = str(today.year) + str(today.month) + str(today.day)
@@ -293,7 +312,7 @@ def createExcelFile(df):
     df.to_excel(writer, sheet_name)
     writer.save()
 
-
+# Create a DataFrame
 def getResult(searching_url_dict):
     # create null list for DataFrame
     result = []
@@ -347,7 +366,7 @@ def getResult(searching_url_dict):
 
     return result
 
-
+# Adjust the DataFrame
 def addCalcColumns(df):
     interest_rate = 0.038
     loanable_rate = 0.68
@@ -384,6 +403,7 @@ def addCalcColumns(df):
 
     return df
 
+# Main function
 def main():
     # public village infos
     df_village_code = pd.read_csv('http://bit.ly/2PeVzTS', sep='\t', dtype={'법정동코드': str})
@@ -418,16 +438,7 @@ def main():
     province = getProvince(df_village_code)
 
     # filter village_list
-    if province == "전지역":
-        village_list = village_list
-    elif province == '(예시)삼성동':
-        #specific_district_list = ['강서구', '영등포구', '구로구', '금천구', '관악구', '마포구', '분당구']  # 특별히 원하는 "구/군"이 있을 경우 이곳의 리스트를 변경
-        # specific_village_list = list(df_village_code[df_village_code["구/군"].isin(specific_district_list)]['동'])
-        # village_list = [specific_village_list][0]
-        village_list = ['삼성동']
-
-    else:
-        village_list = df_village_code[df_village_code["도시"] == province]["동"]
+    village_list = filterProvinces(province)
 
     # ----------------
 
