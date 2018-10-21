@@ -454,7 +454,8 @@ def addCalcColumns(df):
 # Main function
 def main():
     # public village infos
-    df_village_code = pd.read_csv('http://bit.ly/2PeVzTS', sep='\t', dtype={'법정동코드': str})
+    df_village_code = pd.read_csv('koreaRegionCode.txt', sep='\t',
+                                  dtype={'법정동코드': str})  # 'http://bit.ly/2PeVzTS' : crawling from the web with this url
     df_village_code = df_village_code[df_village_code["폐지여부"] == "존재"]
 
     # get Region list
@@ -468,13 +469,10 @@ def main():
     df_village_code = df_village_code[~df_village_code['동'].str.endswith('구')]
 
     # get province from user
-    province = getProvince(df_village_code)
-
-    # filter village_list
-    village_list = filterProvinces(province, df_village_code)
+    village = getProvince(df_village_code)
 
     # get contents urls
-    searching_url_dict = getContentsUrls(village_list, df_village_code)
+    searching_url_dict = getContentsUrls(village, df_village_code)
 
     # get informations
     result = getResult(searching_url_dict)
@@ -490,7 +488,7 @@ def main():
     result = addCalcColumns(result)
 
     # Create into an Excel file
-    createExcelFile(result, province)
+    createExcelFile(result, village)
 
 if __name__ == "__main__":
     main()
