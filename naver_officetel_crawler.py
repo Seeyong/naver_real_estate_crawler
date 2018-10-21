@@ -45,8 +45,9 @@ def getRegionList(df_village_code):
 
 # Get province from user
 def getProvince(df_village_code):
-    city_number = "0.전지역 | \n"
-    city_dict = {0: '전지역'}
+    # city selection process
+    city_number = ""
+    city_dict = {}
     city_list = list(df_village_code["도시"].unique())
 
     for number, city in enumerate(city_list):
@@ -57,9 +58,6 @@ def getProvince(df_village_code):
 
         city_dict[number + 1] = city
 
-    city_number = city_number + '18.예시(삼성동)'
-    city_dict[18] = '(예시)삼성동'
-
     while True:
         try:
             province_num = int(input("원하는 도시의 번호를 선택해주세요\n" + city_number))
@@ -68,63 +66,97 @@ def getProvince(df_village_code):
             print("숫자로 입력해주세요.")
             continue
         except KeyError as k:
-            print("0 ~ 19 사이의 숫자로 입력해주세요.")
+            print("1 ~ 19 사이의 숫자로 입력해주세요.")
             continue
         break
 
-    return province
+    # district selection process
+    district_number = ""
+    district_dict = {}
+    district_list = list(df_village_code[df_village_code['도시'] == province]["구/군"].unique())
+    district_list
 
-# Filter provinces
-def filterProvinces(province, df_village_code):
-    if province == "전지역":
-        village_list = village_list
-    elif province == '(예시)삼성동':
-        # specific_district_list = ['강서구', '영등포구', '구로구', '금천구', '관악구', '마포구', '동대문구', '분당구'] # 특별히 원하는 "구/군"이 있을 경우 이곳의 리스트를 변경
-        # specific_village_list = list(df_village_code[df_village_code["구/군"].isin(specific_district_list)]['동'])
-        # village_list = [specific_village_list][0]
-        village_list = ["삼성동"]
-    else:
-        village_list = df_village_code[df_village_code["도시"] == province]["동"]
+    for number, district in enumerate(district_list):
+        if (number + 1) % 3 == 0:
+            district_number += str(number + 1) + '.' + district + ' | \n'
+        else:
+            district_number += str(number + 1) + '.' + district + ' | '
 
-    return village_list
+        district_dict[number + 1] = district
+
+    while True:
+        try:
+            district_num = int(input("원하는 군/구의 번호를 선택해주세요\n" + district_number))
+            district = district_dict[district_num]
+        except ValueError as e:
+            print("숫자로 입력해주세요.")
+            continue
+        except KeyError as k:
+            print("1 ~ %d 사이의 숫자로 입력해주세요." % (len(district_dict) - 1))
+            continue
+        break
+
+    # village selection process
+    village_number = ""
+    village_dict = {}
+    village_list = list(df_village_code[df_village_code['구/군'] == district]["동"].unique())
+    village_list
+
+    for number, village in enumerate(village_list):
+        if (number + 1) % 3 == 0:
+            village_number += str(number + 1) + '.' + village + ' | \n'
+        else:
+            village_number += str(number + 1) + '.' + village + ' | '
+
+        village_dict[number + 1] = village
+
+    while True:
+        try:
+            village_num = int(input("원하는 동의 번호를 선택해주세요\n" + village_number))
+            village = village_dict[village_num]
+        except ValueError as e:
+            print("숫자로 입력해주세요.")
+            continue
+        except KeyError as k:
+            print("1 ~ %d 사이의 숫자로 입력해주세요." % (len(village_dict) - 1))
+            continue
+        break
+
+    return village
 
 # Get contents_urls
-def getContentsUrls(village_list, df_village_code):
+def getContentsUrls(village, df_village_code):
     root_url = "https://land.naver.com/"
     searching_url_dict = {}
     max_page = 20
 
-    for village in tqdm(village_list):
-        city = df_village_code[df_village_code["동"] == village]['도시'].values[0]
-        district = df_village_code[df_village_code["동"] == village]['구/군'].values[0]
-        code = df_village_code[df_village_code["동"] == village]['법정동코드'].values[0]
-        for page_number in range(1, max_page + 1):
-            basic_url = 'https://land.naver.com/article/articleList.nhn?rletTypeCd=A02&tradeTypeCd=A1&hscpTypeCd=A02&cortarNo={code}&articleOrderCode=&siteOrderCode=&cpId=&mapX=&mapY=&mapLevel=&minPrc=&maxPrc=&minWrrnt=&maxWrrnt=&minLease=&maxLease=&minSpc=&maxSpc=&subDist=&mviDate=&hsehCnt=&rltrId=&mnex=&mHscpNo=&mPtpRange=&mnexOrder=&location=1924&ptpNo=&bssYm=&schlCd=&cmplYn=&page={page_number}#_content_list_target'.format(
-                code=code, page_number=page_number)
-            basic_url = rq.Request(basic_url,
-                                   headers={
-                                       'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/69.0.3497.100 Safari/537.36'
-                                   })
-            basic_html = rq.urlopen(basic_url).read()
-            basic_soup = bs(basic_html, "html.parser")
-            basic_elems = basic_soup.find_all("span", {"class": "btn_naverlink"})
+    city = df_village_code[df_village_code["동"] == village]['도시'].values[0]
+    district = df_village_code[df_village_code["동"] == village]['구/군'].values[0]
+    code = df_village_code[df_village_code["동"] == village]['법정동코드'].values[0]
+    for page_number in range(1, max_page + 1):
+        basic_url = 'https://land.naver.com/article/articleList.nhn?rletTypeCd=A02&tradeTypeCd=A1&hscpTypeCd=A02&cortarNo={code}&articleOrderCode=&siteOrderCode=&cpId=&mapX=&mapY=&mapLevel=&minPrc=&maxPrc=&minWrrnt=&maxWrrnt=&minLease=&maxLease=&minSpc=&maxSpc=&subDist=&mviDate=&hsehCnt=&rltrId=&mnex=&mHscpNo=&mPtpRange=&mnexOrder=&location=1924&ptpNo=&bssYm=&schlCd=&cmplYn=&page={page_number}#_content_list_target'.format(
+            code=code, page_number=page_number)
+        basic_url = rq.Request(basic_url,
+                               headers={
+                                   'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/69.0.3497.100 Safari/537.36'
+                               })
+        basic_html = rq.urlopen(basic_url).read()
+        basic_soup = bs(basic_html, "html.parser")
+        basic_elems = basic_soup.find_all("span", {"class": "btn_naverlink"})
 
-            # ban 방지용 : 페이지가 2의 배수일 때 쉼
-            if page_number % 2 == 0:
-                sleeptime = random.randint(3, 7)
-                sleep(sleeptime)
+        # ban 방지용 : 페이지가 2의 배수일 때 쉼
+        if page_number % 2 == 0:
+            sleeptime = random.randint(3, 7)
+            sleep(sleeptime)
 
-            # 마지막 페이징에서 break
-            if basic_elems == []:
-                break
+        # 마지막 페이징에서 break
+        if basic_elems == []:
+            break
 
-            else:
-                for i in range(len(basic_elems)):
-                    estate_url = root_url + basic_elems[i].find("a").attrs["href"]
-                    searching_url_dict[estate_url] = [city, district, village]
-
-        # ban 방지용 : "동"이 변경될 때 마다 쉼
-        sleep(25)
+        else:
+            for i in range(len(basic_elems)):
+                estate_url = root_url + basic_elems[i].find("a").attrs["href"]
+                searching_url_dict[estate_url] = [city, district, village]
 
     return searching_url_dict
 
@@ -434,9 +466,6 @@ def main():
     df_village_code["동"] = village_list
     df_village_code = df_village_code[df_village_code['동'] != df_village_code['도시']]
     df_village_code = df_village_code[~df_village_code['동'].str.endswith('구')]
-
-    # get final village_list
-    village_list = df_village_code["동"]
 
     # get province from user
     province = getProvince(df_village_code)
