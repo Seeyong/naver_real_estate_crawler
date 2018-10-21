@@ -1,7 +1,7 @@
 '''
 실거래가
 
-2018. 10. 21 Developed by Seeyong
+2018. 10. 22 Developed by Seeyong
 NaverOfficetel Crawler
 V 1.0.0
 '''
@@ -43,82 +43,114 @@ def getRegionList(df_village_code):
 
 # Get province from user
 def getProvince(df_village_code):
-    # city selection process
-    city_number = ""
-    city_dict = {}
-    city_list = list(df_village_code["도시"].unique())
 
-    for number, city in enumerate(city_list):
-        if (number + 1) % 3 == 0:
-            city_number += str(number + 1) + '.' + city + ' | \n'
-        else:
-            city_number += str(number + 1) + '.' + city + ' | '
+    def getCityNumber(df_village_code):
+        # city selection process
+        city_number = "0.EXIT |\n"
+        city_dict = {0: 0}
+        city_list = list(df_village_code["도시"].unique())
 
-        city_dict[number + 1] = city
+        for number, city in enumerate(city_list):
+            if (number + 1) % 3 == 0:
+                city_number += str(number + 1) + '.' + city + ' | \n'
+            else:
+                city_number += str(number + 1) + '.' + city + ' | '
 
-    while True:
-        try:
-            province_num = int(input("원하는 도시의 번호를 선택해주세요\n" + city_number))
-            province = city_dict[province_num]
-        except ValueError as e:
-            print("숫자로 입력해주세요.")
-            continue
-        except KeyError as k:
-            print("1 ~ 19 사이의 숫자로 입력해주세요.")
-            continue
-        break
+            city_dict[number + 1] = city
 
-    # district selection process
-    district_number = ""
-    district_dict = {}
-    district_list = list(df_village_code[df_village_code['도시'] == province]["구/군"].unique())
-    district_list
+        while True:
+            try:
+                province_num = int(input("원하는 도시의 번호를 선택해주세요\n" + city_number))
 
-    for number, district in enumerate(district_list):
-        if (number + 1) % 3 == 0:
-            district_number += str(number + 1) + '.' + district + ' | \n'
-        else:
-            district_number += str(number + 1) + '.' + district + ' | '
+                if province_num == 0:
+                    print("프로그램이 종료되었습니다.")
+                    raise SystemExit
+                else:
+                    province = city_dict[province_num]
+                    return province
 
-        district_dict[number + 1] = district
+            except ValueError as e:
+                print("숫자로 입력해주세요.")
+                continue
+            except KeyError as k:
+                print("0 ~ %d 사이의 숫자로 입력해주세요."%(len(city_dict)-1))
+                continue
+            break
 
-    while True:
-        try:
-            district_num = int(input("원하는 군/구의 번호를 선택해주세요\n" + district_number))
-            district = district_dict[district_num]
-        except ValueError as e:
-            print("숫자로 입력해주세요.")
-            continue
-        except KeyError as k:
-            print("1 ~ %d 사이의 숫자로 입력해주세요." % (len(district_dict) - 1))
-            continue
-        break
+        return province
 
-    # village selection process
-    village_number = ""
-    village_dict = {}
-    village_list = list(df_village_code[df_village_code['구/군'] == district]["동"].unique())
-    village_list
+    def getDistNumber(df_village_code, province):
+        # district selection process
+        district_number = "0.도시 다시 선택하기 |\n"
+        district_dict = {}
+        district_list = list(df_village_code[df_village_code['도시'] == province]["구/군"].unique())
+        district_list
 
-    for number, village in enumerate(village_list):
-        if (number + 1) % 3 == 0:
-            village_number += str(number + 1) + '.' + village + ' | \n'
-        else:
-            village_number += str(number + 1) + '.' + village + ' | '
+        for number, district in enumerate(district_list):
+            if (number + 1) % 3 == 0:
+                district_number += str(number + 1) + '.' + district + ' | \n'
+            else:
+                district_number += str(number + 1) + '.' + district + ' | '
 
-        village_dict[number + 1] = village
+            district_dict[number + 1] = district
 
-    while True:
-        try:
-            village_num = int(input("원하는 동의 번호를 선택해주세요\n" + village_number))
-            village = village_dict[village_num]
-        except ValueError as e:
-            print("숫자로 입력해주세요.")
-            continue
-        except KeyError as k:
-            print("1 ~ %d 사이의 숫자로 입력해주세요." % (len(village_dict) - 1))
-            continue
-        break
+        while True:
+            try:
+                district_num = int(input("원하는 군/구의 번호를 선택해주세요\n" + district_number))
+
+                if district_num == 0:
+                    province = getCityNumber(df_village_code)
+                    district = getDistNumber(province)
+                    return district, province
+                else:
+                    district = district_dict[district_num]
+            except ValueError as e:
+                print("숫자로 입력해주세요.")
+                continue
+            except KeyError as k:
+                print("0 ~ %d 사이의 숫자로 입력해주세요." % (len(district_dict) - 1))
+                continue
+            break
+
+        return district, province
+
+    def getVillageNumber(df_village_code, district, province):
+        # village selection process
+        village_number = "0.구/군 다시 선택하기 |\n"
+        village_dict = {}
+        village_list = list(df_village_code[df_village_code['구/군'] == district]["동"].unique())
+        village_list
+
+        for number, village in enumerate(village_list):
+            if (number + 1) % 3 == 0:
+                village_number += str(number + 1) + '.' + village + ' | \n'
+            else:
+                village_number += str(number + 1) + '.' + village + ' | '
+
+            village_dict[number + 1] = village
+
+        while True:
+            try:
+                village_num = int(input("원하는 동의 번호를 선택해주세요\n" + village_number))
+                if village_num == 0:
+                    district, province = getDistNumber(df_village_code, province)
+                    village = getVillageNumber(df_village_code, district, province)
+                    return village
+                else:
+                    village = village_dict[village_num]
+            except ValueError as e:
+                print("숫자로 입력해주세요.")
+                continue
+            except KeyError as k:
+                print("1 ~ %d 사이의 숫자로 입력해주세요." % (len(village_dict) - 1))
+                continue
+            break
+
+        return village
+
+    province = getCityNumber(df_village_code)
+    district, province = getDistNumber(df_village_code, province)
+    village = getVillageNumber(df_village_code, district, province)
 
     return village
 
@@ -144,7 +176,7 @@ def getContentsUrls(village, df_village_code):
 
         # ban 방지용 : 페이지가 2의 배수일 때 쉼
         if page_number % 2 == 0:
-            sleeptime = random.randint(3, 7)
+            sleeptime = random.randint(5, 10)
             sleep(sleeptime)
 
         # 마지막 페이징에서 break
@@ -363,7 +395,7 @@ def getParkingNumber(searching_soup):
         detail_soup = searching_soup.find('div', {'class','div_detail'}).find_all('div', {'class', 'inner'})
         parkingnumber = int(detail_soup[5].text.split(' ')[0])
     except (ValueError, AttributeError, IndexError) as e:
-        households = 0
+        parkingnumber = 0
     return parkingnumber
 
 # Create an Excel file
@@ -384,9 +416,11 @@ def getResult(searching_url_dict):
 
     for url in tqdm(searching_url_dict):
 
-        # ban 방지용 : url 개수가 20의 배수일 때 더 오래 쉼
+        # ban 방지용 : url 개수가 20 or 100의 배수일 때 더 오래 쉼
         count += 1
-        if count % 20 == 0:
+        if count%100 == 0:
+            sleep(50)
+        elif count % 20 == 0:
             sleep(25)
 
         url_user = rq.Request(url,
@@ -465,6 +499,7 @@ def addCalcColumns(df):
         df['대출없는수익률'] = df['연세'] / (df['매매가'] - df['보증금'])
         df['대출없는수익률'] = df['대출없는수익률'].round(2)
         df['세대당주차대수'] = df['총주차대수'] / df['총세대수']
+        df['세대당주차대수'] = df['세대당주차대수'].round(2)
     except (ValueError, AttributeError, IndexError, ZeroDivisionError) as e:
         pass
 
