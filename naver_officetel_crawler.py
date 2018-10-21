@@ -350,6 +350,24 @@ def getCompletionDate(searching_soup):
         completion_date = "-"
     return completion_date
 
+def getHouseholds(searching_soup):
+    # all households
+    try:
+        detail_soup = searching_soup.find('div', {'class','div_detail'}).find_all('div', {'class', 'inner'})
+        households = int(detail_soup[3].text.split(' ')[0])
+    except (ValueError, AttributeError, IndexError) as e:
+        households = 0
+    return households
+
+def getParkingNumber(searching_soup):
+    # parking number
+    try:
+        detail_soup = searching_soup.find('div', {'class','div_detail'}).find_all('div', {'class', 'inner'})
+        parkingnumber = int(detail_soup[5].text.split(' ')[0])
+    except (ValueError, AttributeError, IndexError) as e:
+        households = 0
+    return parkingnumber
+
 # Create an Excel file
 def createExcelFile(df, province):
     today = datetime.today()
@@ -404,11 +422,13 @@ def getResult(searching_url_dict):
         utility_bills = getUtilityBills(searching_soup)
         intermediate_pay = getIntermPay(searching_soup)
         completion_date = getCompletionDate(searching_soup)
+        households = getHouseholds(searching_soup)
+        parkingnumber = getParkingNumber(searching_soup)
 
         info_list = [city, district, village, title, price, contract_area, exclusive_area, specific_floor, total_floor,
                      rooms, baths, loan_amount, moveable,
                      administration_cost, deposit, rent_fee, characteristics, intermediary, utility_bills,
-                     intermediate_pay, completion_date, url]
+                     intermediate_pay, completion_date, households, parkingnumber, url]
 
         result.append(info_list)
 
@@ -446,6 +466,7 @@ def addCalcColumns(df):
         df['매입여부'] = df['매매가'] < df['적정매입가']
         df['대출없는수익률'] = df['연세'] / (df['매매가'] - df['보증금'])
         df['대출없는수익률'] = df['대출없는수익률'].round(2)
+        df['세대당주차대수'] = df['총주차대수'] / df['총세대수']
     except (ValueError, AttributeError, IndexError, ZeroDivisionError) as e:
         pass
 
@@ -481,11 +502,19 @@ def main():
     result = pd.DataFrame(result)
 
     column_list = ['도시', '구/군', '동', '물건명', '매매가', '계약면적', '전용면적', '해당층', '총층', '방개수', '욕실수', '융자금', '입주가능일',
-                   '월관리비', '보증금', '월세', '특징', '중개업소', '공과금', '중개보수', '신축일자', '물건url']
+                   '월관리비', '보증금', '월세', '특징', '중개업소', '공과금', '중개보수', '신축일자', '총세대수', '총주차대수', '물건url']
     result.columns = column_list
 
     # add other columns
     result = addCalcColumns(result)
+
+    # rearrange column of DataFrame
+    rearranged_column = ['도시', '구/군', '동', '물건명', '매매가', '융자금', '계약면적', '전용면적', '전용률', '계약평단가', '전용평단가',
+                         '보증금', '월세', '연세', '월관리비', '공과금', '중개보수', '입주가능일', '특징', '해당층', '총층', '방개수',
+                         '욕실수', '총세대수', '총주차대수', '세대당주차대수', '신축일자', '연기간차이', '대출금', '연이자', '자기자금',
+                         '자기자금이자', '연수익금', '자기자금수익률', '실질매입비용', '적정매입가', '매입여부', '공짜수익', '대출없는수익률',
+                         '중개업소', '물건url']
+    result = result[rearranged_column]  # 현재일자 column 제외
 
     # Create into an Excel file
     createExcelFile(result, village)
