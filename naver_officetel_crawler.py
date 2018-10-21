@@ -3,7 +3,7 @@
 총주차대수(세대당)
 실거래가
 
-2018. 10. 19 Developed by Seeyong
+2018. 10. 21 Developed by Seeyong
 NaverOfficetel Crawler
 V 1.0.0
 '''
@@ -79,9 +79,9 @@ def filterProvinces(province, df_village_code):
     if province == "전지역":
         village_list = village_list
     elif province == '(예시)삼성동':
-        #         specific_district_list = ['강서구', '영등포구', '구로구', '금천구', '관악구', '마포구', '동대문구', '분당구'] # 특별히 원하는 "구/군"이 있을 경우 이곳의 리스트를 변경
-        #         specific_village_list = list(df_village_code[df_village_code["구/군"].isin(specific_district_list)]['동'])
-        #         village_list = [specific_village_list][0]
+        # specific_district_list = ['강서구', '영등포구', '구로구', '금천구', '관악구', '마포구', '동대문구', '분당구'] # 특별히 원하는 "구/군"이 있을 경우 이곳의 리스트를 변경
+        # specific_village_list = list(df_village_code[df_village_code["구/군"].isin(specific_district_list)]['동'])
+        # village_list = [specific_village_list][0]
         village_list = ["삼성동"]
     else:
         village_list = df_village_code[df_village_code["도시"] == province]["동"]
@@ -319,7 +319,7 @@ def getCompletionDate(searching_soup):
     return completion_date
 
 # Create an Excel file
-def createExcelFile(df):
+def createExcelFile(df, province):
     today = datetime.today()
     str_today = str(today.year) + str(today.month) + str(today.day)
     file_name = province + '_' + "Officetel_" + str_today + ".xlsx"
@@ -454,7 +454,7 @@ def main():
     result = pd.DataFrame(result)
 
     column_list = ['도시', '구/군', '동', '물건명', '매매가', '계약면적', '전용면적', '해당층', '총층', '방개수', '욕실수', '융자금', '입주가능일',
-                   '월관리비', '보증금', '월세', '특징', '중개업소', '공과금', '중개보수', '신축일', '물건url']
+                   '월관리비', '보증금', '월세', '특징', '중개업소', '공과금', '중개보수', '신축일자', '물건url']
     result.columns = column_list
 
     # add other columns
