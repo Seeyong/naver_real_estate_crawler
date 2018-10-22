@@ -2,8 +2,8 @@
 실거래가
 
 2018. 10. 22 Developed by Seeyong
-NaverOfficetel Crawler
-V 1.0.0
+Naver Officetel Crawler
+V 1.1.3
 '''
 '''
 오피스텔 : rletTypeCd=A02
@@ -14,6 +14,7 @@ http://www.code.go.kr/
 '''
 
 # Import Libraries
+import sys
 from urllib import request as rq
 from bs4 import BeautifulSoup as bs
 from datetime import datetime
@@ -21,6 +22,10 @@ import pandas as pd
 from tqdm import tqdm
 from time import sleep
 import random
+from lxml.html import fromstring
+import requests
+from itertools import cycle
+import socket
 
 # Get city/district/village list
 def getRegionList(df_village_code):
@@ -64,7 +69,8 @@ def getProvince(df_village_code):
 
                 if province_num == 0:
                     print("프로그램이 종료되었습니다.")
-                    raise SystemExit
+                    # raise SystemExit
+                    sys.exit()
                 else:
                     province = city_dict[province_num]
                     return province
@@ -154,6 +160,21 @@ def getProvince(df_village_code):
 
     return village
 
+# get free proxies(IP address:PORT)
+def getProxies():
+    url = 'https://free-proxy-list.net/'
+    response = requests.get(url)
+    parser = fromstring(response.text)
+    proxies = set()
+    for i in parser.xpath('//tbody/tr')[:20]:
+        # Grabbing IP and corresponding PORT
+        proxy = ":".join([i.xpath('.//td[1]/text()')[0], i.xpath('.//td[2]/text()')[0]])
+        proxies.add(proxy)
+
+    proxy_pool = cycle(proxies)
+
+    return proxy_pool
+
 # Get contents_urls
 def getContentsUrls(village, df_village_code):
     root_url = "https://land.naver.com/"
@@ -164,29 +185,30 @@ def getContentsUrls(village, df_village_code):
     district = df_village_code[df_village_code["동"] == village]['구/군'].values[0]
     code = df_village_code[df_village_code["동"] == village]['법정동코드'].values[0]
     for page_number in range(1, max_page + 1):
-        basic_url = 'https://land.naver.com/article/articleList.nhn?rletTypeCd=A02&tradeTypeCd=A1&hscpTypeCd=A02&cortarNo={code}&articleOrderCode=&siteOrderCode=&cpId=&mapX=&mapY=&mapLevel=&minPrc=&maxPrc=&minWrrnt=&maxWrrnt=&minLease=&maxLease=&minSpc=&maxSpc=&subDist=&mviDate=&hsehCnt=&rltrId=&mnex=&mHscpNo=&mPtpRange=&mnexOrder=&location=1924&ptpNo=&bssYm=&schlCd=&cmplYn=&page={page_number}#_content_list_target'.format(
-            code=code, page_number=page_number)
-        basic_url = rq.Request(basic_url,
-                               headers={
-                                   'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/69.0.3497.100 Safari/537.36'
-                               })
-        basic_html = rq.urlopen(basic_url).read()
-        basic_soup = bs(basic_html, "html.parser")
-        basic_elems = basic_soup.find_all("span", {"class": "btn_naverlink"})
 
-        # ban 방지용 : 페이지가 2의 배수일 때 쉼
-        if page_number % 2 == 0:
-            sleeptime = random.randint(5, 10)
-            sleep(sleeptime)
+            basic_url = 'https://land.naver.com/article/articleList.nhn?rletTypeCd=A02&tradeTypeCd=A1&hscpTypeCd=A02&cortarNo={code}&articleOrderCode=&siteOrderCode=&cpId=&mapX=&mapY=&mapLevel=&minPrc=&maxPrc=&minWrrnt=&maxWrrnt=&minLease=&maxLease=&minSpc=&maxSpc=&subDist=&mviDate=&hsehCnt=&rltrId=&mnex=&mHscpNo=&mPtpRange=&mnexOrder=&location=1924&ptpNo=&bssYm=&schlCd=&cmplYn=&page={page_number}#_content_list_target'.format(
+                code=code, page_number=page_number)
+            basic_url = rq.Request(basic_url,
+                                   headers={
+                                       'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/69.0.3497.100 Safari/537.36'
+                                   })
+            basic_html = rq.urlopen(basic_url).read()
+            basic_soup = bs(basic_html, "html.parser")
+            basic_elems = basic_soup.find_all("span", {"class": "btn_naverlink"})
 
-        # 마지막 페이징에서 break
-        if basic_elems == []:
-            break
+            # ban 방지용 : 페이지가 3의 배수일 때 쉼
+            if page_number % 3 == 0:
+                # sleeptime = random.randint(5, 10)
+                sleep(25)
 
-        else:
-            for i in range(len(basic_elems)):
-                estate_url = root_url + basic_elems[i].find("a").attrs["href"]
-                searching_url_dict[estate_url] = [city, district, village]
+            # 마지막 페이징에서 break
+            if basic_elems == []:
+                break
+
+            else:
+                for i in range(len(basic_elems)):
+                    estate_url = root_url + basic_elems[i].find("a").attrs["href"]
+                    searching_url_dict[estate_url] = [city, district, village]
 
     return searching_url_dict
 
@@ -377,7 +399,7 @@ def getCompletionDate(searching_soup):
         completion_elem = searching_soup.find("div", {"class":"div_detail"}).find_all("div", {"class":"inner"})
         completion_date = datetime.strptime(completion_elem[-1].text, '%Y.%m.')
     except (ValueError, AttributeError, IndexError) as e:
-        completion_date = "-"
+        completion_date = datetime(1900, 1, 1)
     return completion_date
 
 def getHouseholds(searching_soup):
@@ -408,61 +430,93 @@ def createExcelFile(df, province):
     df.to_excel(writer, sheet_name)
     writer.save()
 
+# get info list
+def getInfoList(url, searching_url_dict):
+    count = 0
+        try:
+            url_user = rq.Request(url,
+                                  headers={
+                                      'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/69.0.3497.100 Safari/537.36'
+                                  })
+            searching_html = rq.urlopen(url_user).read()
+            searching_soup = bs(searching_html, "html.parser")
+
+            # get region info
+            city = searching_url_dict[url][0]
+            district = searching_url_dict[url][1]
+            village = searching_url_dict[url][2]
+
+            # get contents
+            title = getContentsTitle(searching_soup)
+            price = getContentsPrice(searching_soup)
+            contract_area = getContractArea(searching_soup)
+            exclusive_area = getExclusiveArea(searching_soup)
+            specific_floor = getSpecificFloor(searching_soup)
+            total_floor = getTotalFloor(searching_soup)
+            rooms = getRooms(searching_soup)
+            baths = getBaths(searching_soup)
+            loan_amount = getLoanAmount(searching_soup)
+            moveable = getMoveable(searching_soup)
+            administration_cost = getAdminCost(searching_soup)
+            deposit = getDepositAmount(searching_soup)
+            rent_fee = getRentFee(searching_soup)
+            characteristics = getChar(searching_soup)
+            intermediary = getInterm(searching_soup)
+            utility_bills = getUtilityBills(searching_soup)
+            intermediate_pay = getIntermPay(searching_soup)
+            completion_date = getCompletionDate(searching_soup)
+            households = getHouseholds(searching_soup)
+            parkingnumber = getParkingNumber(searching_soup)
+
+            info_list = [city, district, village, title, price, contract_area, exclusive_area, specific_floor, total_floor,
+                         rooms, baths, loan_amount, moveable,
+                         administration_cost, deposit, rent_fee, characteristics, intermediary, utility_bills, intermediate_pay,
+                         completion_date, households, parkingnumber, url]
+        except:
+            count += 1
+            pass
+
+        return info_list
+
 # Create a DataFrame
-def getResult(searching_url_dict):
+def getResult(searching_url_dict, proxy_pool):
     # create null list for DataFrame
     result = []
-    count = 1
+    # count = 1
 
     for url in tqdm(searching_url_dict):
+        while True:
+            try:
+                # ban 방지용 : url 개수가 20 or 100의 배수일 때 더 오래 쉼
+                # count += 1
+                # if count%100 == 0:
+                #     sleep(50)
+                # elif count % 20 == 0:
+                #     sleep(25)
 
-        # ban 방지용 : url 개수가 20 or 100의 배수일 때 더 오래 쉼
-        count += 1
-        if count%100 == 0:
-            sleep(50)
-        elif count % 20 == 0:
-            sleep(25)
+                # get a proxy from the pool
+                proxy = next(proxy_pool)
+                handler = rq.ProxyHandler({'http': proxy, "https": proxy})
+                opener = rq.build_opener(handler)
+                rq.install_opener(opener)
+                print(proxy)
 
-        url_user = rq.Request(url,
-                              headers={
-                                  'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/69.0.3497.100 Safari/537.36'
-                              })
-        searching_html = rq.urlopen(url_user).read()
-        searching_soup = bs(searching_html, "html.parser")
+                info_list = getInfoList(url, searching_url_dict)
+                result.append(info_list)
+            except:
+                # continue
+                # get a proxy from the pool
+                handler = rq.ProxyHandler()
+                opener = rq.build_opener(handler)
+                rq.install_opener(opener)
+                print(socket.gethostbyname(socket.gethostname()))
 
-        # get region info
-        city = searching_url_dict[url][0]
-        district = searching_url_dict[url][1]
-        village = searching_url_dict[url][2]
+                info_list = getInfoList(url, searching_url_dict)
+                result.append(info_list)
+            break
 
-        # get contents
-        title = getContentsTitle(searching_soup)
-        price = getContentsPrice(searching_soup)
-        contract_area = getContractArea(searching_soup)
-        exclusive_area = getExclusiveArea(searching_soup)
-        specific_floor = getSpecificFloor(searching_soup)
-        total_floor = getTotalFloor(searching_soup)
-        rooms = getRooms(searching_soup)
-        baths = getBaths(searching_soup)
-        loan_amount = getLoanAmount(searching_soup)
-        moveable = getMoveable(searching_soup)
-        administration_cost = getAdminCost(searching_soup)
-        deposit = getDepositAmount(searching_soup)
-        rent_fee = getRentFee(searching_soup)
-        characteristics = getChar(searching_soup)
-        intermediary = getInterm(searching_soup)
-        utility_bills = getUtilityBills(searching_soup)
-        intermediate_pay = getIntermPay(searching_soup)
-        completion_date = getCompletionDate(searching_soup)
-        households = getHouseholds(searching_soup)
-        parkingnumber = getParkingNumber(searching_soup)
-
-        info_list = [city, district, village, title, price, contract_area, exclusive_area, specific_floor, total_floor,
-                     rooms, baths, loan_amount, moveable,
-                     administration_cost, deposit, rent_fee, characteristics, intermediary, utility_bills,
-                     intermediate_pay, completion_date, households, parkingnumber, url]
-
-        result.append(info_list)
+    # Create result DataFrame
+    result = pd.DataFrame(result)
 
     return result
 
@@ -525,15 +579,16 @@ def main():
     # get province from user
     village = getProvince(df_village_code)
 
+    # rotate proxies
+    proxy_pool = getProxies()
+
     # get contents urls
     searching_url_dict = getContentsUrls(village, df_village_code)
 
     # get informations
-    result = getResult(searching_url_dict)
+    result = getResult(searching_url_dict, proxy_pool)
 
-    # Create result DataFrame
-    result = pd.DataFrame(result)
-
+    # set column name
     column_list = ['도시', '구/군', '동', '물건명', '매매가', '계약면적', '전용면적', '해당층', '총층', '방개수', '욕실수', '융자금', '입주가능일',
                    '월관리비', '보증금', '월세', '특징', '중개업소', '공과금', '중개보수', '신축일자', '총세대수', '총주차대수', '물건url']
     result.columns = column_list
