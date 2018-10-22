@@ -432,69 +432,59 @@ def createExcelFile(df, province):
 
 # get info list
 def getInfoList(url, searching_url_dict):
-    count = 0
-        try:
-            url_user = rq.Request(url,
-                                  headers={
-                                      'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/69.0.3497.100 Safari/537.36'
-                                  })
-            searching_html = rq.urlopen(url_user).read()
-            searching_soup = bs(searching_html, "html.parser")
+    try:
+        url_user = rq.Request(url,
+                              headers={
+                                  'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/69.0.3497.100 Safari/537.36'
+                              })
+        searching_html = rq.urlopen(url_user).read()
+        searching_soup = bs(searching_html, "html.parser")
 
-            # get region info
-            city = searching_url_dict[url][0]
-            district = searching_url_dict[url][1]
-            village = searching_url_dict[url][2]
+        # get region info
+        city = searching_url_dict[url][0]
+        district = searching_url_dict[url][1]
+        village = searching_url_dict[url][2]
 
-            # get contents
-            title = getContentsTitle(searching_soup)
-            price = getContentsPrice(searching_soup)
-            contract_area = getContractArea(searching_soup)
-            exclusive_area = getExclusiveArea(searching_soup)
-            specific_floor = getSpecificFloor(searching_soup)
-            total_floor = getTotalFloor(searching_soup)
-            rooms = getRooms(searching_soup)
-            baths = getBaths(searching_soup)
-            loan_amount = getLoanAmount(searching_soup)
-            moveable = getMoveable(searching_soup)
-            administration_cost = getAdminCost(searching_soup)
-            deposit = getDepositAmount(searching_soup)
-            rent_fee = getRentFee(searching_soup)
-            characteristics = getChar(searching_soup)
-            intermediary = getInterm(searching_soup)
-            utility_bills = getUtilityBills(searching_soup)
-            intermediate_pay = getIntermPay(searching_soup)
-            completion_date = getCompletionDate(searching_soup)
-            households = getHouseholds(searching_soup)
-            parkingnumber = getParkingNumber(searching_soup)
+        # get contents
+        title = getContentsTitle(searching_soup)
+        price = getContentsPrice(searching_soup)
+        contract_area = getContractArea(searching_soup)
+        exclusive_area = getExclusiveArea(searching_soup)
+        specific_floor = getSpecificFloor(searching_soup)
+        total_floor = getTotalFloor(searching_soup)
+        rooms = getRooms(searching_soup)
+        baths = getBaths(searching_soup)
+        loan_amount = getLoanAmount(searching_soup)
+        moveable = getMoveable(searching_soup)
+        administration_cost = getAdminCost(searching_soup)
+        deposit = getDepositAmount(searching_soup)
+        rent_fee = getRentFee(searching_soup)
+        characteristics = getChar(searching_soup)
+        intermediary = getInterm(searching_soup)
+        utility_bills = getUtilityBills(searching_soup)
+        intermediate_pay = getIntermPay(searching_soup)
+        completion_date = getCompletionDate(searching_soup)
+        households = getHouseholds(searching_soup)
+        parkingnumber = getParkingNumber(searching_soup)
 
-            info_list = [city, district, village, title, price, contract_area, exclusive_area, specific_floor, total_floor,
-                         rooms, baths, loan_amount, moveable,
-                         administration_cost, deposit, rent_fee, characteristics, intermediary, utility_bills, intermediate_pay,
-                         completion_date, households, parkingnumber, url]
-        except:
-            count += 1
-            pass
-
+        info_list = [city, district, village, title, price, contract_area, exclusive_area, specific_floor, total_floor,
+                     rooms, baths, loan_amount, moveable,
+                     administration_cost, deposit, rent_fee, characteristics, intermediary, utility_bills, intermediate_pay,
+                     completion_date, households, parkingnumber, url]
         return info_list
+
+    except:
+        pass
 
 # Create a DataFrame
 def getResult(searching_url_dict, proxy_pool):
     # create null list for DataFrame
     result = []
-    # count = 1
 
     for url in tqdm(searching_url_dict):
         while True:
             try:
-                # ban 방지용 : url 개수가 20 or 100의 배수일 때 더 오래 쉼
-                # count += 1
-                # if count%100 == 0:
-                #     sleep(50)
-                # elif count % 20 == 0:
-                #     sleep(25)
-
-                # get a proxy from the pool
+                # get a Free proxy from the pool
                 proxy = next(proxy_pool)
                 handler = rq.ProxyHandler({'http': proxy, "https": proxy})
                 opener = rq.build_opener(handler)
@@ -504,8 +494,7 @@ def getResult(searching_url_dict, proxy_pool):
                 info_list = getInfoList(url, searching_url_dict)
                 result.append(info_list)
             except:
-                # continue
-                # get a proxy from the pool
+                # use my own proxy
                 handler = rq.ProxyHandler()
                 opener = rq.build_opener(handler)
                 rq.install_opener(opener)
@@ -518,6 +507,7 @@ def getResult(searching_url_dict, proxy_pool):
     # Create result DataFrame
     result = pd.DataFrame(result)
 
+    # print missing url counts
     return result
 
 # Adjust the DataFrame
