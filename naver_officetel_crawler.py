@@ -504,10 +504,11 @@ def getResult(searching_url_dict, proxy_pool):
                 result.append(info_list)
             break
 
+    result = [x for x in result if x is not None]
+
     # Create result DataFrame
     result = pd.DataFrame(result)
 
-    # print missing url counts
     return result
 
 # Adjust the DataFrame
