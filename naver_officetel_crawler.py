@@ -1,9 +1,9 @@
 '''
 실거래가
 
-2018. 10. 22 Developed by Seeyong
+2018. 10. 23 Developed by Seeyong
 Naver Officetel Crawler
-V 1.1.3
+V 1.1.4
 '''
 '''
 오피스텔 : rletTypeCd=A02
@@ -203,7 +203,7 @@ def getProxies():
     result = result[~result['IP'].str.contains('amazon')]
     result['IP:PORT'] = result['IP'] + result['PORT']
     result = result[result['SPEED'] > 1500]
-    ip_ports = set(result['IP:PORT'])
+    ip_ports = cycle(set(result['IP:PORT']))
     ip_ports
 
     return ip_ports
