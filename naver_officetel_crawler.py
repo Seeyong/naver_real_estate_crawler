@@ -162,18 +162,51 @@ def getProvince(df_village_code):
 
 # get free proxies(IP address:PORT)
 def getProxies():
-    url = 'https://free-proxy-list.net/'
-    response = requests.get(url)
-    parser = fromstring(response.text)
-    proxies = set()
-    for i in parser.xpath('//tbody/tr')[:20]:
-        # Grabbing IP and corresponding PORT
-        proxy = ":".join([i.xpath('.//td[1]/text()')[0], i.xpath('.//td[2]/text()')[0]])
-        proxies.add(proxy)
+    # set url elem&soup
+    url = 'https://www.proxynova.com/proxy-server-list/country-kr/'
+    url_elem = rq.urlopen(url).read()
+    url_soup = bs(url_elem, 'html.parser')
+    ips = url_soup.find('div', {'id': 'bla'}).find_all('abbr')
+    ports = url_soup.find_all('td')
+    proxy_speeds = url_soup.find_all('small')
 
-    proxy_pool = cycle(proxies)
+    result = []
+    for i in range(len(ips)):
+        if i < 12:
+            # ip title
+            title = ips[i]['title'] + ':'
 
-    return proxy_pool
+            # port number
+            port = ports[1 + (i * 8)].text.replace('\n', '')
+
+            # proxy speed
+            speed = int(proxy_speeds[i].text.split(' ')[0])
+
+            result.append([title, port, speed])
+        else:
+            # ip title
+            title = ips[i]['title'] + ':'
+
+            # port number
+            port = ports[2 + (i * 8)].text.replace('\n', '')
+
+            # proxy speed
+            speed = int(proxy_speeds[i].text.split(' ')[0])
+
+            result.append([title, port, speed])
+
+    # create to DataFrame
+    result = pd.DataFrame(result)
+    column_list = ['IP', 'PORT', 'SPEED']
+    result
+    result.columns = column_list
+    result = result[~result['IP'].str.contains('amazon')]
+    result['IP:PORT'] = result['IP'] + result['PORT']
+    result = result[result['SPEED'] > 1500]
+    ip_ports = set(result['IP:PORT'])
+    ip_ports
+
+    return ip_ports
 
 # Get contents_urls
 def getContentsUrls(village, df_village_code):
