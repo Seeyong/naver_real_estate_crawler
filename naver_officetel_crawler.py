@@ -1,9 +1,11 @@
 '''
 실거래가
+multiprocessing
+엑셀파일 추출 완료 후 텔레그램 메시징
 
 2018. 10. 23 Developed by Seeyong
 Naver Officetel Crawler
-V 1.1.4
+V 1.1.5
 '''
 '''
 오피스텔 : rletTypeCd=A02
@@ -519,27 +521,33 @@ def getResult(searching_url_dict, proxy_pool):
     result = []
 
     for url in tqdm(searching_url_dict):
-        while True:
-            try:
-                # get a Free proxy from the pool
-                proxy = next(proxy_pool)
-                handler = rq.ProxyHandler({'http': proxy, "https": proxy})
-                opener = rq.build_opener(handler)
-                rq.install_opener(opener)
-                print(proxy)
+        # under 30 urls -> use own IP address
+        if len(searching_url_dict) <= 30:
+            info_list = getInfoList(url, searching_url_dict)
+            result.append(info_list)
 
-                info_list = getInfoList(url, searching_url_dict)
-                result.append(info_list)
-            except:
-                # use my own proxy
-                handler = rq.ProxyHandler()
-                opener = rq.build_opener(handler)
-                rq.install_opener(opener)
-                print(socket.gethostbyname(socket.gethostname()))
+        else:
+            while True:
+                try:
+                    # get a Free proxy from the pool
+                    proxy = next(proxy_pool)
+                    handler = rq.ProxyHandler({'http': proxy, "https": proxy})
+                    opener = rq.build_opener(handler)
+                    rq.install_opener(opener)
+                    print(proxy)
 
-                info_list = getInfoList(url, searching_url_dict)
-                result.append(info_list)
-            break
+                    info_list = getInfoList(url, searching_url_dict)
+                    result.append(info_list)
+                except:
+                    # use my own proxy
+                    handler = rq.ProxyHandler()
+                    opener = rq.build_opener(handler)
+                    rq.install_opener(opener)
+                    print(socket.gethostbyname(socket.gethostname()))
+
+                    info_list = getInfoList(url, searching_url_dict)
+                    result.append(info_list)
+                break
 
     result = [x for x in result if x is not None]
 
@@ -636,4 +644,10 @@ def main():
     createExcelFile(result, village)
 
 if __name__ == "__main__":
-    main()
+    while True:
+        try:
+            main()
+        except ValueError as e:
+            print("등록된 물건이 없습니다.")
+            continue
+        break
