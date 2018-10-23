@@ -71,7 +71,6 @@ def getProvince(df_village_code):
 
                 if province_num == 0:
                     print("프로그램이 종료되었습니다.")
-                    # raise SystemExit
                     sys.exit()
                 else:
                     province = city_dict[province_num]
