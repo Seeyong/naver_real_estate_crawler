@@ -202,7 +202,11 @@ def getProxies():
     result.columns = column_list
     result = result[~result['IP'].str.contains('amazon')]
     result['IP:PORT'] = result['IP'] + result['PORT']
+
+    # filter IP's speed exceed 1500
     result = result[result['SPEED'] > 1500]
+
+    # get another ip:port every cycle
     ip_ports = cycle(set(result['IP:PORT']))
     ip_ports
 
