@@ -2,7 +2,7 @@
 실거래가
 multiprocessing
 엑셀파일 추출 완료 후 텔레그램 메시징
-시 vs 도 unmatched resolvingv ex) 성남시 분당구 분당동
+시 vs 도 unmatched resolvingv ex) 성남시 분당구 분당
 
 2018. 10. 23 Developed by Seeyong
 Naver Officetel Crawler
