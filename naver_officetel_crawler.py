@@ -560,14 +560,15 @@ def getResult(searching_url_dict, proxy_pool):
 def addCalcColumns(df):
     interest_rate = 0.038
     loanable_rate = 0.68
+    a_area = 3.305785 # 1평
 
     try:
         df['매매가'] = df['매매가'] * 10000
         df['융자금'] = df['융자금'] * 10000
         df['전용률'] = df['전용면적'] / df['계약면적']
         df['전용률'] = df['전용률'].round(2)
-        df['계약평단가'] = df['매매가'] / df['계약면적']
-        df['전용평단가'] = df['매매가'] / df['전용면적']
+        df['계약평단가'] = df['매매가'] / df['계약면적'] * a_area
+        df['전용평단가'] = df['매매가'] / df['전용면적'] * a_area
         df['월세'] = df['월세'] * 10000
         df['보증금'] = df['보증금'] * 10000
         df['연세'] = df['월세'] * 12
