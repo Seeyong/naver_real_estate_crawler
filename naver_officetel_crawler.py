@@ -228,8 +228,21 @@ def getContentsUrls(village, df_village_code):
             # tradeType = {'rent' : 'B2', 'purchase' : 'A1'}
             # propertyType = {'officetel' : 'A02', 'store' : 'D02', 'office' : 'D01', 'factory' : 'E02'}
 
-            basic_url = 'https://land.naver.com/article/articleList.nhn?rletTypeCd=D02&tradeTypeCd=B2&hscpTypeCd=A02&cortarNo={code}&articleOrderCode=&siteOrderCode=&cpId=&mapX=&mapY=&mapLevel=&minPrc=&maxPrc=&minWrrnt=&maxWrrnt=&minLease=&maxLease=&minSpc=&maxSpc=&subDist=&mviDate=&hsehCnt=&rltrId=&mnex=&mHscpNo=&mPtpRange=&mnexOrder=&location=1924&ptpNo=&bssYm=&schlCd=&cmplYn=&page={page_number}#_content_list_target'.format(
+            # url for factory
+            # basic_url = 'https://land.naver.com/article/articleList.nhn?rletTypeCd=E02&tradeTypeCd=B2&rletNo=&cortarNo={code}&hscpTypeCd=E02%3AE04&mapX=&mapY=&mapLevel=&page={page_number}&articlePage=&ptpNo=&rltrId=&mnex=&bildNo=&articleOrderCode=&cpId=&period=&prodTab=&atclNo=&atclRletTypeCd=&location=2089&bbs_tp_cd=&sort=&siteOrderCode=&schlCd=&tradYy=&exclsSpc=&splySpcR=&cmplYn=#_content_list_target'.format(
+            #     code=code, page_number=page_number)
+
+            # url for office
+            basic_url = 'https://land.naver.com/article/articleList.nhn?rletTypeCd=D01&tradeTypeCd=B2&rletNo=&cortarNo={code}&hscpTypeCd=D01&mapX=&mapY=&mapLevel=&page={page_number}&articlePage=&ptpNo=&rltrId=&mnex=&bildNo=&articleOrderCode=&cpId=&period=&prodTab=&atclNo=&atclRletTypeCd=&location=3409&bbs_tp_cd=&sort=&siteOrderCode=&schlCd=&tradYy=&exclsSpc=&splySpcR=&cmplYn=#_content_list_target'.format(
                 code=code, page_number=page_number)
+
+            # url for store
+            # basic_url = 'https://land.naver.com/article/articleList.nhn?rletTypeCd=D02&tradeTypeCd=B2&rletNo=&cortarNo={code}&hscpTypeCd=D02&mapX=&mapY=&mapLevel=&page={page_number}&articlePage=&ptpNo=&rltrId=&mnex=&bildNo=&articleOrderCode=&cpId=&period=&prodTab=&atclNo=&atclRletTypeCd=&location=2089&bbs_tp_cd=&sort=&siteOrderCode=&schlCd=&tradYy=&exclsSpc=&splySpcR=&cmplYn=#_content_list_target'.format(
+            #     code=code, page_number=page_number)
+
+            # url for Officetel
+            # basic_url = 'https://land.naver.com/article/articleList.nhn?rletTypeCd=A02&tradeTypeCd=A1&hscpTypeCd=A02&cortarNo={code}&articleOrderCode=&siteOrderCode=&cpId=&mapX=&mapY=&mapLevel=&minPrc=&maxPrc=&minWrrnt=&maxWrrnt=&minLease=&maxLease=&minSpc=&maxSpc=&subDist=&mviDate=&hsehCnt=&rltrId=&mnex=&mHscpNo=&mPtpRange=&mnexOrder=&location=1924&ptpNo=&bssYm=&schlCd=&cmplYn=&page={page_number}#_content_list_target'.format(
+            #     code=code, page_number=page_number)
             basic_url = rq.Request(basic_url,
                                    headers={
                                        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/69.0.3497.100 Safari/537.36'
@@ -479,7 +492,7 @@ def createExcelFile(df, province):
     today = datetime.today()
     str_today = str(today.year) + str(today.month) + str(today.day)
     # change file name along with PropertyType
-    file_name = province + '_' + "Store_" + str_today + ".xlsx"
+    file_name = province + '_' + "Office_" + str_today + ".xlsx"
     sheet_name = province + "_" + str_today
     writer = pd.ExcelWriter(file_name)
     df.to_excel(writer, sheet_name)
