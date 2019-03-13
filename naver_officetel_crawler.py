@@ -2,11 +2,12 @@
 실거래가
 multiprocessing
 엑셀파일 추출 완료 후 텔레그램 메시징
+부동산 타입 & 매매 타입 선택 옵션
 시 vs 도 unmatched resolving ex) 성남시 분당구 분당
 
-2018. 10. 23 Developed by Seeyong
+2019. 03. 13 Developed by Seeyong
 Naver Officetel Crawler
-V 1.1.5
+V 1.1.6
 '''
 '''
 Highest Year of School Completed : hscpTypeCd=A02
