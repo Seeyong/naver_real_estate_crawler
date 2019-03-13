@@ -225,7 +225,10 @@ def getContentsUrls(village, df_village_code):
     code = df_village_code[df_village_code["동"] == village]['법정동코드'].values[0]
     for page_number in range(1, max_page + 1):
 
-            basic_url = 'https://land.naver.com/article/articleList.nhn?rletTypeCd=A02&tradeTypeCd=B2&hscpTypeCd=A02&cortarNo={code}&articleOrderCode=&siteOrderCode=&cpId=&mapX=&mapY=&mapLevel=&minPrc=&maxPrc=&minWrrnt=&maxWrrnt=&minLease=&maxLease=&minSpc=&maxSpc=&subDist=&mviDate=&hsehCnt=&rltrId=&mnex=&mHscpNo=&mPtpRange=&mnexOrder=&location=1924&ptpNo=&bssYm=&schlCd=&cmplYn=&page={page_number}#_content_list_target'.format(
+            # tradeType = {'rent' : 'B2', 'purchase' : 'A1'}
+            # propertyType = {'officetel' : 'A02', 'store' : 'D02', 'office' : 'D01', 'factory' : 'E02'}
+
+            basic_url = 'https://land.naver.com/article/articleList.nhn?rletTypeCd=D02&tradeTypeCd=B2&hscpTypeCd=A02&cortarNo={code}&articleOrderCode=&siteOrderCode=&cpId=&mapX=&mapY=&mapLevel=&minPrc=&maxPrc=&minWrrnt=&maxWrrnt=&minLease=&maxLease=&minSpc=&maxSpc=&subDist=&mviDate=&hsehCnt=&rltrId=&mnex=&mHscpNo=&mPtpRange=&mnexOrder=&location=1924&ptpNo=&bssYm=&schlCd=&cmplYn=&page={page_number}#_content_list_target'.format(
                 code=code, page_number=page_number)
             basic_url = rq.Request(basic_url,
                                    headers={
@@ -475,7 +478,8 @@ def getParkingNumber(searching_soup):
 def createExcelFile(df, province):
     today = datetime.today()
     str_today = str(today.year) + str(today.month) + str(today.day)
-    file_name = province + '_' + "Officetel_" + str_today + ".xlsx"
+    # change file name along with PropertyType
+    file_name = province + '_' + "Store_" + str_today + ".xlsx"
     sheet_name = province + "_" + str_today
     writer = pd.ExcelWriter(file_name)
     df.to_excel(writer, sheet_name)
