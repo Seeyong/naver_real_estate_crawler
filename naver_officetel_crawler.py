@@ -371,9 +371,12 @@ def getAdminCost(searching_soup):
 def getDepositAmount(searching_soup):
     # deposit amount
     try:
+        # for purchasing
         # summary_basic = searching_soup.find("div", {"class":"view_info"}).find_all("div", {"class":"inner"})
         # deposit_and_rentfee = summary_basic[11].text.split("/")
         # deposit = int(deposit_and_rentfee[0].replace(',','').strip())
+
+        # for rent
         rate_basic = searching_soup.find_all("p", {"class": "rate_info"})
         deposit_and_rentfee = rate_basic[1].text.replace('\n', '').replace('만원', '').split('/')
         deposit = int(deposit_and_rentfee[0].replace(',', ''))
@@ -384,9 +387,12 @@ def getDepositAmount(searching_soup):
 def getRentFee(searching_soup):
     # rent fee
     try:
+        # for purchasing
         # summary_basic = searching_soup.find("div", {"class":"view_info"}).find_all("div", {"class":"inner"})
         # deposit_and_rentfee = summary_basic[11].text.split("/")
         # rent_fee = int(deposit_and_rentfee[1].split("만")[0].strip().replace(',',''))
+
+        # for rent
         rate_basic = searching_soup.find_all("p", {"class": "rate_info"})
         deposit_and_rentfee = rate_basic[1].text.replace('\n', '').replace('만원', '').split('/')
         rent_fee = int(deposit_and_rentfee[1].replace(',', ''))
